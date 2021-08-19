@@ -1,0 +1,123 @@
+#define BUZZER   8            // Pin for buzzer
+#define LED      13
+
+String inputString = "";      // a String to hold incoming data
+bool stringComplete = false;  // whether the string is complete
+int buzzer = 0;
+int led = 0;
+int on_off = 0;
+
+
+
+void setup() {
+  // initialize serial:
+  Serial.begin(9600);
+  
+  pinMode(BUZZER, OUTPUT);
+  pinMode(LED, OUTPUT);
+  
+  // reserve 200 bytes for the inputString:
+  inputString.reserve(200);
+}
+
+void compare_string(char *s1, char *s2, int n) {
+
+  Serial.print("Comparing ");
+  Serial.print(s1);
+  Serial.print(" and ");
+  Serial.println(s2);
+  
+  if (strncmp(s1, s2, n) == 0) {
+    Serial.println("The two strings are the same");
+    if (strncmp(s1, "Buzzer", 6) == 0) {
+      buzzer = 1;
+    }
+    if (strncmp(s1, "LED", 3) == 0) {
+      led = 1;
+    }
+    if (strncmp(s1, "on", 2) == 0) {
+      on_off = 1;
+    }
+    if (strncmp(s1, "off", 3) == 0) {
+      on_off = 0;
+    }
+  } else {
+    Serial.println("The two strings are not the same");
+  }
+}
+
+void processMessage(char *message) {
+  int i=0;
+  int n=0;
+  char buffer[12];
+  
+  for (i=0,n=0; message[i] != '\n'; i++) {
+    buffer[n++] = message[i];
+    if (message[i] == ' ') {
+      Serial.println(buffer);
+      compare_string(buffer, "on", 2);
+      compare_string(buffer, "off", 3);
+      compare_string(buffer, "Buzzer", 6);
+      compare_string(buffer, "LED", 3);
+      n = 0;
+    }
+  }
+}
+
+void control_devices() {
+  
+    if ((buzzer == 1) && (on_off == 1)) {
+      buzzer = 0;
+      digitalWrite(BUZZER, HIGH);
+    }
+ 
+    if ((buzzer == 1) && (on_off == 0)) {
+      buzzer = 0;
+      digitalWrite(BUZZER, LOW);
+    }
+    
+    if ((led == 1) && (on_off == 1)) {
+      led = 0;
+      digitalWrite(LED, HIGH);
+    }
+    
+    if ((led == 1) && (on_off == 0)) {
+      led = 0;
+      digitalWrite(LED, LOW);
+    }
+}
+
+void loop() {
+  char buf[24];
+  
+  // print the string when a newline arrives:
+  if (stringComplete) {
+    Serial.println(inputString);
+    inputString.toCharArray(buf, 24);
+    // clear the string:
+    inputString = "";
+    stringComplete = false;
+
+    processMessage(buf);
+
+    control_devices();
+  }
+}
+
+void serialEvent() {
+  while (Serial.available()) {
+    // get the new byte:
+    char inChar = (char) Serial.read();
+
+    Serial.println(inChar);
+    
+    // add it to the inputString:
+    inputString += inChar;
+    
+    // if the incoming character is a newline, set a flag so the main loop can
+    // do something about it:
+    if (inChar == '\n') {
+      stringComplete = true;
+    }
+  }
+}

@@ -1,5 +1,10 @@
+#include <LiquidCrystal_I2C.h>
+
 #define BUZZER   8            // Pin for buzzer
 #define LED      13
+
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
 
 String inputString = "";      // a String to hold incoming data
 bool stringComplete = false;  // whether the string is complete
@@ -12,6 +17,9 @@ int on_off = 0;
 void setup() {
   // initialize serial:
   Serial.begin(9600);
+
+  lcd.init();
+  lcd.backlight();
   
   pinMode(BUZZER, OUTPUT);
   pinMode(LED, OUTPUT);
@@ -28,17 +36,32 @@ void compare_string(char *s1, char *s2, int n) {
   Serial.println(s2);
   
   if (strncmp(s1, s2, n) == 0) {
+    
     Serial.println("The two strings are the same");
+    
     if (strncmp(s1, "Buzzer", 6) == 0) {
+      lcd.setCursor(0,0);
+      lcd.print("Buzzer          ");
       buzzer = 1;
     }
     if (strncmp(s1, "LED", 3) == 0) {
+      lcd.setCursor(0,0);
+      lcd.print("LED             ");
+      led = 1;
+    }
+    if (strncmp(s1, "Motor", 5) == 0) {
+      lcd.setCursor(0,0);
+      lcd.print("Motor           ");
       led = 1;
     }
     if (strncmp(s1, "on", 2) == 0) {
+      lcd.setCursor(0,1);
+      lcd.print("on              ");
       on_off = 1;
     }
     if (strncmp(s1, "off", 3) == 0) {
+      lcd.setCursor(0,1);
+      lcd.print("off             ");
       on_off = 0;
     }
   } else {
@@ -49,11 +72,14 @@ void compare_string(char *s1, char *s2, int n) {
 void processMessage(char *message) {
   int i=0;
   int n=0;
+  int len = 0;
   char buffer[12];
+
+  len = strlen(message);
   
-  for (i=0,n=0; message[i] != '\n'; i++) {
+  for (i=0,n=0; i <= len; i++) {
     buffer[n++] = message[i];
-    if (message[i] == ' ') {
+    if ((message[i] == ' ') || (message[i] == '\n')) {
       Serial.println(buffer);
       compare_string(buffer, "on", 2);
       compare_string(buffer, "off", 3);

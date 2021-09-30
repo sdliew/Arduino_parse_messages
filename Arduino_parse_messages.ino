@@ -1,10 +1,17 @@
 #include <LiquidCrystal_I2C.h>
 
-#define BUZZER   8            // Pin for buzzer
+#define BUZZER    8           // Pin for buzzer
 #define LED      13
+
+struct header {
+  char command[16]; /* for storing keywords such as Buzzer, LED, Motor, etc.*/
+  char status[8];   /* for storing On and Off */
+};
+
 
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
+struct header hdr;
 
 String inputString = "";      // a String to hold incoming data
 bool stringComplete = false;  // whether the string is complete
@@ -26,8 +33,14 @@ void setup() {
   
   // reserve 200 bytes for the inputString:
   inputString.reserve(200);
+
+  lcd.setCursor(0,0);
+  lcd.print("Waiting for msg.");
 }
 
+void display_message() {
+  
+}
 void compare_string(char *s1, char *s2, int n) {
 
   Serial.print("Comparing ");
@@ -54,14 +67,14 @@ void compare_string(char *s1, char *s2, int n) {
       lcd.print("Motor           ");
       led = 1;
     }
-    if (strncmp(s1, "on", 2) == 0) {
+    if (strncmp(s1, "On", 2) == 0) {
       lcd.setCursor(0,1);
-      lcd.print("on              ");
+      lcd.print("On              ");
       on_off = 1;
     }
-    if (strncmp(s1, "off", 3) == 0) {
+    if (strncmp(s1, "Off", 3) == 0) {
       lcd.setCursor(0,1);
-      lcd.print("off             ");
+      lcd.print("Off             ");
       on_off = 0;
     }
   } else {
@@ -81,8 +94,8 @@ void processMessage(char *message) {
     buffer[n++] = message[i];
     if ((message[i] == ' ') || (message[i] == '\n')) {
       Serial.println(buffer);
-      compare_string(buffer, "on", 2);
-      compare_string(buffer, "off", 3);
+      compare_string(buffer, "On", 2);
+      compare_string(buffer, "Off", 3);
       compare_string(buffer, "Buzzer", 6);
       compare_string(buffer, "LED", 3);
       n = 0;
@@ -116,6 +129,8 @@ void control_devices() {
 void loop() {
   char buf[24];
   
+  delay(500);
+  
   // print the string when a newline arrives:
   if (stringComplete) {
     Serial.println(inputString);
@@ -140,7 +155,8 @@ void serialEvent() {
     // add it to the inputString:
     inputString += inChar;
     
-    // if the incoming character is a newline, set a flag so the main loop can
+    // if incoming character is a newline, 
+    // set a flag so loop() function can
     // do something about it:
     if (inChar == '\n') {
       stringComplete = true;
